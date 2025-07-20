@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Chat WebSocket POC</title>
+    </head>
+    <body>
+        <h1>Chat WebSocket POC</h1>
+
+        <button onclick="connect()">Se connecter</button>
+        <button onclick="disconnect()">Se deconnecter</button>
+
+        <div
+            id="messages"
+            style="
+                border: 1px solid black;
+                height: 200px;
+                overflow-y: auto;
+                margin: 10px 0;
+            "
+        ></div>
+
+        <input type="text" id="messageInput" placeholder="Message" />
+        <button onclick="sendMessage()">Envoyer</button>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
+        <script>
+            let stompClient = null;
+
+            function connect() {
+                const socket = new SockJS("http://localhost:8080/chat");
+                stompClient = Stomp.over(socket);
+
+                stompClient.connect({}, function (frame) {
+                    console.log("Connecté");
+                    stompClient.subscribe(
+                        "/topic/messages",
+                        function (messageOutput) {
+                            document.getElementById("messages").innerHTML +=
+                                "<div>" + messageOutput.body + "</div>";
+                        },
+                    );
+                });
+            }
+
+            function disconnect() {
+                if (stompClient !== null) {
+                    stompClient.disconnect();
+                }
+            }
+
+            function sendMessage() {
+                const message = document.getElementById("messageInput").value;
+                if (message && stompClient) {
+                    stompClient.send("/app/send", {}, message);
+                    document.getElementById("messageInput").value = "";
+                }
+            }
+        </script>
+    </body>
+</html>
